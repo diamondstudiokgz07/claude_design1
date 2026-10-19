@@ -8,6 +8,12 @@
 	handle /api/* {
 		reverse_proxy api:8000
 	}
+	handle /app* {
+		reverse_proxy api:8000
+	}
+	handle / {
+		redir /app/
+	}
 	handle /health {
 		reverse_proxy api:8000
 	}

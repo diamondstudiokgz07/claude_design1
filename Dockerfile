@@ -12,6 +12,7 @@ COPY alembic.ini ./
 COPY alembic ./alembic
 COPY app ./app
 COPY worker ./worker
+COPY web ./web
 
 USER dostuk
 EXPOSE 8000

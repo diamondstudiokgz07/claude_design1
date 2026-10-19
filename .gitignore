@@ -6,3 +6,5 @@ data/
 .test-files/
 .pytest_cache/
 .ruff_cache/
+e2e-shots/
+dump.rdb

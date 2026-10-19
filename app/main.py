@@ -2,9 +2,11 @@ import asyncio
 import contextlib
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
@@ -79,6 +81,15 @@ def create_app() -> FastAPI:
             await conn.execute(text("SELECT 1"))
         await get_redis().ping()
         return {"status": "ok"}
+
+    # Тестовая HTML-консоль (прототип до Flutter-приложений): /app/
+    web_dir = Path(__file__).resolve().parent.parent / "web"
+    if s.serve_test_console and web_dir.is_dir():
+        app.mount("/app", StaticFiles(directory=web_dir, html=True), name="test-console")
+
+        @app.get("/", include_in_schema=False)
+        async def root():
+            return RedirectResponse("/app/")
 
     if s.storage_backend != "s3":
         storage.ensure_local_dir()

@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     run_publisher_in_api: bool = False  # для локальной разработки без worker
     idempotency_ttl_hours: int = 48
     min_app_version: str = "3.0.0"
+    serve_test_console: bool = True  # HTML-консоль на /app/ (выключить, когда будут Flutter-приложения)
 
 
 @lru_cache

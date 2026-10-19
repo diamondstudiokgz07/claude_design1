@@ -1,0 +1,1151 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Достук 3.0 — тест-консоль</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23ff7a00%22/%3E%3Ctext x=%2216%22 y=%2223%22 font-size=%2220%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22%3E%D0%94%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f6f5f2; --panel: #ffffff; --ink: #1d1b18; --muted: #6f6a62; --line: #e4e0d8;
+  --accent: #ff7a00; --accent-ink: #ffffff; --ok: #1f8a4c; --warn: #b7791f; --bad: #c0392b; --info: #2b6cb0;
+  --chip: #f0ede7; --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04); --r: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#151412; --panel:#1f1d1a; --ink:#f1eee8; --muted:#a29c92; --line:#34312c; --chip:#2a2824;
+          --shadow: 0 1px 2px rgba(0,0,0,.4); }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+h1, h2, h3 { margin: 0 0 .5em; line-height: 1.2; }
+h2 { font-size: 18px; } h3 { font-size: 15px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+input, select, textarea { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 0; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+button { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.danger { color: var(--bad); }
+button.small { padding: 3px 8px; font-size: 13px; }
+button:disabled { opacity: .5; cursor: progress; }
+label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--muted); }
+label > input, label > select, label > textarea { color: var(--ink); font-size: 15px; }
+.row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+.row.center { align-items: center; }
+.grow { flex: 1; }
+.muted { color: var(--muted); font-size: 13px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; box-shadow: var(--shadow); }
+.stack > * + * { margin-top: 12px; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 99px; background: var(--chip); font-size: 12px; }
+.chip.ok { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+.chip.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.chip.bad { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+.chip.info { background: color-mix(in srgb, var(--info) 16%, transparent); color: var(--info); }
+table.list { width: 100%; border-collapse: collapse; }
+table.list td, table.list th { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+table.list th { font-size: 12px; color: var(--muted); font-weight: 500; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+header.top { position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); }
+header.top .bar { display: flex; gap: 12px; align-items: center; padding: 10px 16px; flex-wrap: wrap; }
+.brand { font-weight: 700; } .brand b { color: var(--accent); }
+nav.tabs { display: flex; gap: 4px; padding: 0 12px; overflow-x: auto; }
+nav.tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 10px 12px; }
+nav.tabs button.active { border-bottom-color: var(--accent); font-weight: 600; }
+main { padding: 16px; max-width: 1400px; margin: 0 auto; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: var(--bad); }
+.dot.on { background: var(--ok); } .dot.wait { background: var(--warn); }
+
+.split { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+@media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+
+.tables { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+.tbl { aspect-ratio: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px;
+       border-radius: 12px; border: 2px solid var(--line); background: var(--panel); cursor: pointer; }
+.tbl.busy { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+.tbl.billed { border-color: var(--info); }
+.tbl.sel { outline: 3px solid var(--ink); }
+.tbl .n { font-size: 22px; font-weight: 700; }
+
+.menu-items { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.mi { text-align: left; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; gap: 4px; white-space: normal; }
+.mi.off { opacity: .45; text-decoration: line-through; }
+.price { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.kds { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.ticket { border-top: 5px solid var(--accent); }
+.ticket .it { display: flex; gap: 8px; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px dashed var(--line); }
+.ticket .it.cooking .nm { color: var(--warn); } .ticket .it.ready .nm { color: var(--ok); }
+.timer { font-variant-numeric: tabular-nums; }
+.timer.late { color: var(--bad); font-weight: 700; }
+
+.pinpad { display: grid; grid-template-columns: repeat(3, 64px); gap: 8px; justify-content: center; }
+.pinpad button { height: 56px; font-size: 22px; }
+.pin-dots { text-align: center; font-size: 28px; letter-spacing: 8px; min-height: 40px; }
+
+#toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; max-width: min(420px, calc(100vw - 32px)); }
+.toast { background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 10px; box-shadow: var(--shadow); font-size: 14px; }
+.toast.err { background: var(--bad); color: #fff; }
+.log { max-height: 60vh; overflow: auto; }
+.log .ev { border-bottom: 1px solid var(--line); padding: 6px 0; }
+pre { white-space: pre-wrap; word-break: break-word; margin: 0; }
+dialog { border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); color: var(--ink); padding: 18px; max-width: min(560px, 94vw); width: 100%; }
+dialog::backdrop { background: rgba(0,0,0,.35); }
+.receipt { background: #fffdf6; color: #222; font-family: ui-monospace, Menlo, monospace; font-size: 12px; padding: 10px; border-radius: 6px; border: 1px dashed #ccc; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toasts"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+"use strict";
+// ============================================================================
+// Состояние и хранение. sessionStorage — у каждой вкладки своё «устройство»,
+// поэтому в соседних вкладках можно одновременно войти официантом, поваром и кассиром.
+// ============================================================================
+const store = {
+  get(k, d = null) { try { const v = sessionStorage.getItem("dostuk." + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { v === null ? sessionStorage.removeItem("dostuk." + k) : sessionStorage.setItem("dostuk." + k, JSON.stringify(v)); } catch {} },
+};
+const S = {
+  base: store.get("base", location.origin.startsWith("http") ? location.origin : "http://localhost:8000"),
+  lang: store.get("lang", "ru"),
+  access: store.get("access"), refresh: store.get("refresh"), device: store.get("device"),
+  me: null, tab: store.get("tab"), since: store.get("since", 0),
+  stations: store.get("kdsStations", []),
+  selTable: null, selOrder: null, cart: [],
+  cache: {},
+};
+const API = () => S.base.replace(/\/$/, "") + "/api/v1";
+const can = p => !!S.me && S.me.permissions.includes(p);
+
+// ============================================================================
+// DOM-помощники (без innerHTML для данных — защита от XSS)
+// ============================================================================
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === false || v === null || v === undefined) continue;
+    if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "class") el.className = v;
+    else if (k === "style") el.style.cssText = v;
+    else if (k === "value") el.value = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat(Infinity)) if (c !== null && c !== undefined && c !== false) el.append(c instanceof Node ? c : String(c));
+  return el;
+}
+const $ = sel => document.querySelector(sel);
+const money = t => (t / 100).toLocaleString("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " с";
+const toTyiyn = s => Math.round(parseFloat(String(s).replace(",", ".")) * 100) || 0;
+const short = id => id ? String(id).slice(0, 8) : "—";
+const tm = iso => iso ? new Date(iso).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) : "";
+const val = id => document.getElementById(id)?.value?.trim() ?? "";
+
+function toast(msg, err = false) {
+  const t = h("div", { class: "toast" + (err ? " err" : "") }, msg);
+  $("#toasts").append(t);
+  setTimeout(() => t.remove(), err ? 6000 : 3000);
+}
+
+// Кнопка с асинхронным действием: блокируется на время запроса, ошибки — в тост
+function btn(label, fn, cls = "") {
+  const b = h("button", { class: cls });
+  b.append(label);
+  b.addEventListener("click", async e => {
+    e.preventDefault();
+    b.disabled = true;
+    try { await fn(e); } catch (err) { if (err && err.message) toast(err.message, true); }
+    finally { b.disabled = false; }
+  });
+  return b;
+}
+
+const STATUS = {
+  queued: ["в очереди", ""], cooking: ["готовится", "warn"], ready: ["готово", "ok"], served: ["отдано", "info"],
+  cancelled: ["отменено", "bad"], open: ["открыт", "warn"], billed: ["пречек", "info"], paid: ["оплачен", "ok"],
+  pending: ["ждёт подтверждения", "bad"],
+};
+const chip = s => h("span", { class: "chip " + (STATUS[s]?.[1] || "") }, STATUS[s]?.[0] || s);
+
+// ============================================================================
+// HTTP: токены, обновление, Idempotency-Key, единый формат ошибок
+// ============================================================================
+class ApiError extends Error {
+  constructor(status, body) {
+    super((body && body.message ? body.message : "HTTP " + status) + (body && body.code ? ` [${body.code}]` : ""));
+    this.status = status; this.body = body;
+  }
+}
+let refreshing = null;
+
+async function api(method, path, body, opt = {}) {
+  const headers = { "Accept-Language": S.lang };
+  if (S.access && !opt.noAuth) headers.Authorization = "Bearer " + S.access;
+  if (opt.device) headers["X-Device-Token"] = S.device?.token || "";
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) headers["Idempotency-Key"] = crypto.randomUUID();
+  let payload;
+  if (opt.form) payload = opt.form;
+  else if (body !== undefined) { headers["Content-Type"] = "application/json"; payload = JSON.stringify(body); }
+  const res = await fetch(API() + path, { method, headers, body: payload });
+  if (res.status === 401 && !opt.noAuth && !opt.retried && S.refresh) {
+    const data = await res.clone().json().catch(() => ({}));
+    if (data.code === "token_expired" && await doRefresh()) return api(method, path, body, { ...opt, retried: true });
+    if (data.code !== "token_expired") { logoutLocal(data.message || "Сессия завершена"); }
+  }
+  if (opt.raw) { if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => null)); return res; }
+  const text = await res.text();
+  const data = text ? (() => { try { return JSON.parse(text); } catch { return text; } })() : null;
+  if (!res.ok) throw new ApiError(res.status, data);
+  return data;
+}
+
+async function doRefresh() {
+  if (!S.refresh) return false;
+  refreshing ??= (async () => {
+    try {
+      const t = await api("POST", "/auth/refresh", { refresh_token: S.refresh }, { noAuth: true });
+      setTokens(t); return true;
+    } catch { logoutLocal("Сессия истекла — войдите снова"); return false; }
+    finally { setTimeout(() => (refreshing = null), 0); }
+  })();
+  return refreshing;
+}
+
+function setTokens(t) {
+  S.access = t.access_token; S.refresh = t.refresh_token;
+  store.set("access", S.access); store.set("refresh", S.refresh);
+}
+
+function logoutLocal(msg) {
+  S.access = S.refresh = S.me = null;
+  store.set("access", null); store.set("refresh", null);
+  ws.stop();
+  if (msg) toast(msg, true);
+  render();
+}
+
+// ============================================================================
+// WebSocket: подписка, добор по since, переподключение, обновление по токену
+// ============================================================================
+const ws = {
+  sock: null, state: "off", backoff: 1000, timer: null, log: [],
+  start() {
+    this.stop(true);
+    if (!S.access) return;
+    const u = new URL(API().replace(/^http/, "ws") + "/ws");
+    u.searchParams.set("token", S.access);
+    u.searchParams.set("since", S.since || 0);
+    if (S.tab === "kitchen" && S.stations.length) u.searchParams.set("stations", S.stations.join(","));
+    this.setState("wait");
+    const sock = new WebSocket(u);
+    this.sock = sock;
+    sock.onopen = () => { this.backoff = 1000; this.setState("on"); };
+    sock.onmessage = e => this.onEvent(JSON.parse(e.data));
+    sock.onclose = async e => {
+      if (this.sock !== sock) return;
+      this.setState("off");
+      if (!S.access) return;
+      if (e.code === 4001) await doRefresh();      // токен истёк — обновить и переподключиться
+      if (e.code === 4003) { logoutLocal("Сессия отозвана администратором"); return; }
+      this.timer = setTimeout(() => this.start(), this.backoff);
+      this.backoff = Math.min(this.backoff * 2, 15000);
+    };
+  },
+  stop(keep) {
+    clearTimeout(this.timer);
+    if (this.sock) { const s = this.sock; this.sock = null; s.close(); }
+    if (!keep) this.setState("off");
+  },
+  setState(s) { this.state = s; const d = $("#wsdot"); if (d) d.className = "dot " + s; const l = $("#wslabel"); if (l) l.textContent = { on: "онлайн", wait: "подключение…", off: "нет связи" }[s]; },
+  onEvent(ev) {
+    if (ev.type === "PING") return;
+    if (ev.seq) { S.since = Math.max(S.since, ev.seq); store.set("since", S.since); }
+    this.log.unshift({ at: new Date(), ev });
+    this.log.length = Math.min(this.log.length, 300);
+    if (ev.type === "ITEMS_ADDED" && S.tab === "kitchen") beep();
+    if (ev.type === "ITEM_STATUS" && ev.data.status === "ready" && S.me && ev.data && S.tab === "floor") toast(`Готово: ${ev.data.name} ×${ev.data.quantity} (заказ №${ev.data.order_number})`);
+    if (ev.type === "WAITER_CALLED") toast(`Стол ${ev.data.table_name}: ${ev.data.reason === "bill" ? "просят счёт" : "зовут официанта"}`);
+    if (ev.type === "SECURITY_ALERT") toast(`Безопасность: ${ev.data.kind} (${ev.data.device_name || ""})`, true);
+    if (ev.type === "SESSION_REVOKED") logoutLocal("Сессия отозвана");
+    scheduleRefresh();
+  },
+};
+let refreshTimer = null;
+function scheduleRefresh() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => { if (S.access && S.me && views[S.tab]?.live) renderTab(true); }, 250);
+}
+function beep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.frequency.value = 880; g.gain.value = 0.08;
+    o.start(); o.stop(ctx.currentTime + 0.25);
+  } catch {}
+}
+
+// ============================================================================
+// Экран входа
+// ============================================================================
+async function renderLogin(root) {
+  const serverCard = h("div", { class: "card stack" },
+    h("h2", {}, "Сервер"),
+    h("div", { class: "row" },
+      h("label", { class: "grow" }, "Адрес backend", h("input", { id: "base", value: S.base })),
+      h("label", {}, "Язык ошибок", h("select", { id: "lang", onchange: e => { S.lang = e.target.value; store.set("lang", S.lang); } },
+        h("option", { value: "ru", selected: S.lang === "ru" }, "Русский"), h("option", { value: "ky", selected: S.lang === "ky" }, "Кыргызча"))),
+      btn("Проверить", async () => {
+        S.base = val("base"); store.set("base", S.base);
+        const r = await fetch(S.base.replace(/\/$/, "") + "/health").then(r => r.json()).catch(() => null);
+        toast(r?.status === "ok" ? "Сервер доступен: БД и Redis в порядке" : "Сервер недоступен", r?.status !== "ok");
+      })),
+    h("div", { class: "muted" }, "Если консоль открыта с самого сервера (/app/), адрес уже правильный."));
+
+  const ownerCard = h("div", { class: "card stack" },
+    h("h2", {}, "Владелец / админ"),
+    h("div", { class: "muted" }, "Email или телефон + пароль (+ код 2FA, если включён)."),
+    h("label", {}, "Email или телефон", h("input", { id: "login", autocomplete: "username" })),
+    h("label", {}, "Пароль", h("input", { id: "password", type: "password", autocomplete: "current-password" })),
+    h("label", {}, "Код 2FA (если включён)", h("input", { id: "totp", inputmode: "numeric" })),
+    btn("Войти", async () => {
+      S.base = val("base"); store.set("base", S.base);
+      const login = val("login");
+      const body = { password: val("password") };
+      if (login.includes("@")) body.email = login; else body.phone = login;
+      if (val("totp")) body.totp_code = val("totp");
+      setTokens(await api("POST", "/auth/login", body, { noAuth: true }));
+      await afterLogin();
+    }, "primary"));
+
+  const deviceCard = h("div", { class: "card stack" }, h("h2", {}, "Устройство (официант, кухня, касса)"));
+  if (!S.device) {
+    deviceCard.append(
+      h("div", { class: "muted" }, "1) Админ создаёт код во вкладке «Персонал → Устройства». 2) Введите код здесь — эта вкладка браузера станет привязанным устройством."),
+      h("label", {}, "Код привязки", h("input", { id: "pair", placeholder: "ABCD2345", style: "text-transform:uppercase;letter-spacing:2px" })),
+      btn("Привязать устройство", async () => {
+        S.base = val("base"); store.set("base", S.base);
+        const r = await api("POST", "/auth/device/pair", { code: val("pair"), platform: "web-test", app_version: "3.0.0" }, { noAuth: true });
+        S.device = { token: r.device_token, name: r.device.name, kind: r.device.kind, venue: r.venue.name };
+        store.set("device", S.device); toast("Устройство привязано: " + r.device.name); render();
+      }, "primary"));
+  } else {
+    deviceCard.append(h("div", { class: "row center" },
+      h("span", {}, `«${S.device.name}» · ${S.device.kind} · ${S.device.venue}`), h("span", { class: "grow" }),
+      btn("Отвязать в этом браузере", () => { S.device = null; store.set("device", null); render(); }, "small danger")));
+    const list = h("div", { class: "row" }, h("span", { class: "muted" }, "Загрузка сотрудников…"));
+    deviceCard.append(h("h3", {}, "Кто вы?"), list, h("div", { id: "pinbox" }));
+    api("GET", "/auth/device/staff", undefined, { device: true, noAuth: true }).then(staff => {
+      list.replaceChildren(...(staff.length ? staff.map(s => h("button", { onclick: () => pinPad(s) }, s.name))
+        : [h("span", { class: "muted" }, "Нет сотрудников с PIN-кодом")]));
+    }).catch(e => { list.replaceChildren(h("span", { class: "muted" }, e.message)); if (e.status === 401) { S.device = null; store.set("device", null); } });
+  }
+
+  root.replaceChildren(h("main", { class: "stack", style: "max-width:980px" },
+    h("h1", {}, h("span", { class: "brand" }, h("b", {}, "Достук"), " 3.0"), " ", h("span", { class: "muted" }, "тест-консоль backend")),
+    serverCard, h("div", { class: "grid", style: "grid-template-columns:repeat(auto-fit,minmax(300px,1fr))" }, ownerCard, deviceCard)));
+}
+
+function pinPad(staff) {
+  let pin = "";
+  const dots = h("div", { class: "pin-dots" }, "—");
+  const upd = () => { dots.textContent = pin ? "•".repeat(pin.length) : "—"; };
+  const press = d => { if (pin.length < 8) { pin += d; upd(); } };
+  const submit = async () => {
+    try {
+      setTokens(await api("POST", "/auth/pin", { staff_id: staff.id, pin }, { device: true, noAuth: true }));
+      await afterLogin();
+    } catch (e) { toast(e.message, true); pin = ""; upd(); }
+  };
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"].map(d => h("button", { onclick: () => press(d) }, d));
+  keys.push(h("button", { onclick: () => { pin = pin.slice(0, -1); upd(); } }, "⌫"), h("button", { onclick: () => press("0") }, "0"),
+    h("button", { class: "primary", onclick: submit }, "OK"));
+  $("#pinbox").replaceChildren(h("div", { class: "stack", style: "margin-top:12px" },
+    h("div", { style: "text-align:center" }, h("b", {}, staff.name), " — введите PIN"), dots, h("div", { class: "pinpad" }, keys)));
+  document.onkeydown = e => {
+    if (!$("#pinbox")) { document.onkeydown = null; return; }
+    if (/^\d$/.test(e.key)) press(e.key); else if (e.key === "Backspace") { pin = pin.slice(0, -1); upd(); } else if (e.key === "Enter") submit();
+  };
+}
+
+async function afterLogin() {
+  document.onkeydown = null;
+  S.me = await api("GET", "/auth/me");
+  const first = Object.keys(views).find(k => views[k].show());
+  if (!S.tab || !views[S.tab]?.show()) S.tab = first;
+  toast(`Здравствуйте, ${S.me.staff.name}!`);
+  render();
+}
+
+// ============================================================================
+// Каркас приложения
+// ============================================================================
+function render() {
+  const root = $("#root");
+  if (!S.access) { renderLogin(root); return; }
+  if (!S.me) {
+    root.replaceChildren(h("main", {}, "Загрузка…"));
+    api("GET", "/auth/me").then(me => { S.me = me; if (!views[S.tab]?.show()) S.tab = Object.keys(views).find(k => views[k].show()); render(); })
+      .catch(e => logoutLocal(e.message));
+    return;
+  }
+  const tabs = Object.entries(views).filter(([, v]) => v.show());
+  root.replaceChildren(
+    h("header", { class: "top" },
+      h("div", { class: "bar" },
+        h("span", { class: "brand" }, h("b", {}, "Достук"), " 3.0"),
+        h("span", {}, S.me.venue.name), h("span", { class: "muted" }, "· " + S.me.staff.name + (S.me.is_owner ? " (владелец)" : "")),
+        S.me.device ? h("span", { class: "chip" }, S.me.device.kind + ": " + S.me.device.name) : null,
+        h("span", { class: "grow" }),
+        h("span", { class: "row center", style: "gap:6px" }, h("span", { id: "wsdot", class: "dot" }), h("span", { id: "wslabel", class: "muted" }, "")),
+        btn("Выйти", async () => { await api("POST", "/auth/logout").catch(() => {}); logoutLocal(); }, "small")),
+      h("nav", { class: "tabs" }, tabs.map(([k, v]) => h("button", { class: S.tab === k ? "active" : "", onclick: () => { S.tab = k; store.set("tab", k); render(); } }, v.title)))),
+    h("main", { id: "view" }, "Загрузка…"));
+  ws.setState(ws.state);
+  if (!ws.sock) ws.start();
+  renderTab();
+}
+
+// Сохранение введённого при перерисовке. Каждое изменение поля получает номер (data-dirty = tick).
+// Перерисовка переносит в новую разметку: всё, что пользователь ввёл ПОСЛЕ её старта (всегда),
+// и вообще всё введённое — если это обновление по событию WebSocket (preserve=true).
+// Перерисовка после действия (оплата и т.п.) стартует после ввода и поэтому сбрасывает форму.
+let editTick = 0;
+const markDirty = e => { if (e.target.closest?.("#view")) e.target.dataset.dirty = String(++editTick); };
+document.addEventListener("input", markDirty);
+document.addEventListener("change", markDirty);
+
+// Перерисовки могут идти параллельно (действие + событие WebSocket). Каждая получает номер;
+// более старая, закончившая позже новой, отбрасывается и не затирает свежий экран.
+let renderSeq = 0, renderApplied = 0;
+async function renderTab(preserve = false) {
+  const view = $("#view");
+  if (!view) return;
+  const my = ++renderSeq;
+  const startTick = editTick;
+  try {
+    const node = await views[S.tab].render();
+    if ($("#view") !== view || my < renderApplied) return;
+    renderApplied = my;
+    const saved = {};
+    for (const el of view.querySelectorAll("[data-dirty][id]")) {
+      if (el.type === "checkbox" || !(preserve || +el.dataset.dirty > startTick)) continue;
+      saved[el.id] = { v: el.multiple ? [...el.selectedOptions].map(o => o.value) : el.value, t: el.dataset.dirty };
+    }
+    const focused = view.contains(document.activeElement) ? document.activeElement.id : null;
+    view.replaceChildren(node);
+    for (const [id, { v, t }] of Object.entries(saved)) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      if (el.multiple) [...el.options].forEach(o => (o.selected = v.includes(o.value))); else el.value = v;
+      el.dataset.dirty = t;
+    }
+    if (focused) document.getElementById(focused)?.focus();
+  } catch (e) { view.replaceChildren(h("div", { class: "card" }, "Ошибка: " + e.message)); }
+}
+
+function modal(title, body, actions) {
+  const d = $("#dlg");
+  d.replaceChildren(h("h2", {}, title), body, h("div", { class: "row", style: "justify-content:flex-end;margin-top:14px" },
+    h("button", { onclick: () => d.close() }, "Закрыть"), actions || []));
+  d.showModal();
+  return d;
+}
+
+// Общие справочники (кэш на время отрисовки)
+async function ref(key, path) { if (!S.cache[key]) S.cache[key] = await api("GET", path); return S.cache[key]; }
+function dropCache(...keys) { for (const k of keys) delete S.cache[k]; }
+
+// ============================================================================
+// Вкладки
+// ============================================================================
+const views = {};
+
+// ---------- Официант: залы, столы, заказ ----------
+views.floor = {
+  title: "Зал", live: true, show: () => can("orders.view"),
+  async render() {
+    dropCache("items");
+    const [tables, halls] = await Promise.all([api("GET", "/tables"), api("GET", "/halls")]);
+    const left = h("div", { class: "stack" });
+    for (const hall of halls) {
+      const ts = tables.filter(t => t.hall_id === hall.id && t.is_active);
+      left.append(h("div", { class: "card stack" }, h("h2", {}, hall.name),
+        ts.length ? h("div", { class: "tables" }, ts.map(t => h("div", {
+          class: "tbl" + (t.open_order_id ? " busy" : "") + (t.open_order_status === "billed" ? " billed" : "") + (S.selTable === t.id ? " sel" : ""),
+          onclick: () => { S.selTable = t.id; S.selOrder = t.open_order_id; S.cart = []; renderTab(); },
+        }, h("span", { class: "n" }, t.name),
+          t.open_order_id ? h("span", { class: "price" }, money(t.open_order_total)) : h("span", { class: "muted" }, t.seats + " мест"),
+          t.open_order_status ? chip(t.open_order_status) : null))) : h("div", { class: "muted" }, "Нет столов")));
+    }
+    if (!halls.length) left.append(h("div", { class: "card" }, "Залов нет. Создайте во вкладке «Настройка» или нажмите «Демо-данные»."));
+    left.append(h("div", { class: "row" }, btn("Заказ без стола (с собой)", async () => {
+      const o = await api("POST", "/orders", { guests: 1 }); S.selTable = null; S.selOrder = o.id; S.cart = []; renderTab();
+    })));
+    left.append(await ordersList());
+
+    const right = h("div", { class: "stack" });
+    const table = tables.find(t => t.id === S.selTable);
+    if (S.selOrder) right.append(await orderPanel(S.selOrder, tables));
+    else if (table) {
+      right.append(h("div", { class: "card stack" }, h("h2", {}, "Стол " + table.name), h("div", { class: "muted" }, "Стол свободен"),
+        h("div", { class: "row" }, h("label", {}, "Гостей", h("input", { id: "guests", type: "number", value: 2, min: 1, style: "width:90px" })),
+          btn("Открыть заказ", async () => {
+            const o = await api("POST", "/orders", { table_id: table.id, guests: +val("guests") || 1 });
+            S.selOrder = o.id; toast("Заказ №" + o.number + " открыт"); renderTab();
+          }, "primary"))));
+    } else right.append(h("div", { class: "card muted" }, "Выберите стол"));
+    return h("div", { class: "split" }, left, right);
+  },
+};
+
+async function ordersList() {
+  const page = await api("GET", "/orders?status=active&limit=50");
+  return h("div", { class: "card stack" }, h("h3", {}, can("orders.view_all") ? "Активные заказы" : "Мои активные заказы"),
+    page.items.length ? h("table", { class: "list" }, h("tr", {}, h("th", {}, "№"), h("th", {}, "Стол"), h("th", {}, "Статус"), h("th", { class: "num" }, "Сумма"), h("th", {}, "")),
+      page.items.map(o => h("tr", {}, h("td", {}, o.number), h("td", {}, o.table_id ? tableName(o.table_id) : "с собой"), h("td", {}, chip(o.status)),
+        h("td", { class: "num" }, money(o.total)), h("td", {}, h("button", { class: "small", onclick: () => { S.selOrder = o.id; S.selTable = o.table_id; S.cart = []; renderTab(); } }, "Открыть")))))
+      : h("div", { class: "muted" }, "Нет активных заказов"));
+}
+const tableNames = {};
+function tableName(id) { return tableNames[id] || short(id); }
+
+async function orderPanel(orderId, tables) {
+  (tables || []).forEach(t => (tableNames[t.id] = t.name));
+  let o;
+  try { o = await api("GET", "/orders/" + orderId); } catch (e) { S.selOrder = null; return h("div", { class: "card" }, e.message); }
+  const active = ["open", "billed", "pending"].includes(o.status);
+  const items = h("table", { class: "list" },
+    h("tr", {}, h("th", {}, "Блюдо"), h("th", {}, "Статус"), h("th", { class: "num" }, "Сумма"), h("th", {}, "")),
+    o.items.map(i => h("tr", {},
+      h("td", {}, h("div", {}, `${i.name} × ${i.quantity}`), i.modifiers.length ? h("div", { class: "muted" }, i.modifiers.map(m => m.name).join(", ")) : null,
+        i.comment ? h("div", { class: "muted" }, "«" + i.comment + "»") : null),
+      h("td", {}, chip(i.status), h("div", { class: "muted" }, tm(i.created_at))),
+      h("td", { class: "num" }, i.status === "cancelled" ? h("s", {}, money(i.total)) : money(i.total)),
+      h("td", {}, active && i.status === "ready" ? btn("Отдал", () => itemStatus(i.id, "served"), "small") : null,
+        active && i.status !== "cancelled" ? btn("✕", () => cancelItem(i), "small danger") : null))));
+
+  const panel = h("div", { class: "card stack" },
+    h("div", { class: "row center" }, h("h2", { style: "margin:0" }, `Заказ №${o.number}`), chip(o.status),
+      h("span", { class: "muted" }, (o.table_id ? "стол " + tableName(o.table_id) : "с собой") + ` · гостей ${o.guests} · ${tm(o.opened_at)}`),
+      h("span", { class: "grow" }), h("button", { class: "small", onclick: () => { S.selOrder = null; renderTab(); } }, "✕")),
+    items,
+    h("table", { class: "list" },
+      h("tr", {}, h("td", {}, "Сумма"), h("td", { class: "num" }, money(o.subtotal))),
+      o.discount_total ? h("tr", {}, h("td", {}, "Скидка"), h("td", { class: "num" }, "−" + money(o.discount_total))) : null,
+      o.service_charge ? h("tr", {}, h("td", {}, "Обслуживание"), h("td", { class: "num" }, money(o.service_charge))) : null,
+      h("tr", {}, h("td", {}, h("b", {}, "Итого")), h("td", { class: "num" }, h("b", {}, money(o.total)))),
+      o.paid_total ? h("tr", {}, h("td", {}, "Оплачено"), h("td", { class: "num" }, money(o.paid_total))) : null,
+      o.paid_total ? h("tr", {}, h("td", {}, "Остаток"), h("td", { class: "num" }, money(o.remaining))) : null),
+    o.payments.length ? h("div", { class: "muted" }, "Оплаты: " + o.payments.map(p => `${p.method} ${money(p.amount)}${p.refunded_at ? " (возврат)" : ""}`).join(", ")) : null);
+
+  if (o.status === "pending") panel.append(btn("Подтвердить заказ с сайта", async () => { await api("POST", `/orders/${o.id}/confirm`); renderTab(); }, "primary"));
+  if (active) {
+    panel.append(h("div", { class: "row" },
+      btn("Пречек", async () => { await api("POST", `/orders/${o.id}/bill`, { print: true }); toast("Пречек отправлен в печать"); renderTab(); }),
+      can("orders.transfer") ? btn("Перенести", () => transferDlg(o)) : null,
+      btn("Отменить заказ", async () => {
+        const reason = prompt("Причина отмены"); if (!reason) return;
+        await api("POST", `/orders/${o.id}/cancel`, { reason }); toast("Заказ отменён"); S.selOrder = null; renderTab();
+      }, "danger"),
+      can("billing.pay") ? btn("К оплате →", () => { S.tab = "cashier"; store.set("tab", "cashier"); S.payOrder = o.id; render(); }) : null));
+    if (can("orders.create")) panel.append(await menuPicker(o));
+  }
+  return panel;
+}
+
+async function itemStatus(id, status, reason) {
+  await api("PATCH", `/order-items/${id}/status`, reason ? { status, reason } : { status });
+  renderTab();
+}
+async function cancelItem(i) {
+  const reason = i.status === "queued" ? (prompt("Причина отмены (необязательно)") ?? null) : prompt("Блюдо уже готовится. Причина отмены:");
+  if (reason === null && i.status !== "queued") return;
+  await itemStatus(i.id, "cancelled", reason || undefined);
+}
+
+function transferDlg(o) {
+  const tables = Object.entries(tableNames);
+  modal("Перенос заказа", h("div", { class: "stack" },
+    h("label", {}, "На стол", h("select", { id: "tr_table" }, h("option", { value: "" }, "— не менять —"), tables.map(([id, n]) => h("option", { value: id }, n)))),
+    h("label", {}, "Другому официанту (UUID сотрудника, необязательно)", h("input", { id: "tr_waiter" }))),
+    btn("Перенести", async () => {
+      const body = {}; if (val("tr_table")) body.table_id = val("tr_table"); if (val("tr_waiter")) body.waiter_id = val("tr_waiter");
+      await api("POST", `/orders/${o.id}/transfer`, body); $("#dlg").close(); toast("Перенесено"); renderTab();
+    }, "primary"));
+}
+
+async function menuPicker(order) {
+  const [cats, items, groups] = await Promise.all([ref("cats", "/categories"), ref("items", "/items"), ref("groups", "/modifiers")]);
+  S.pickCat ??= cats[0]?.id;
+  const cart = h("div", { class: "stack" });
+  const drawCart = () => {
+    cart.replaceChildren(
+      S.cart.length ? h("table", { class: "list" }, S.cart.map((c, idx) => h("tr", {},
+        h("td", {}, `${c.name} × ${c.quantity}`, c.mods.length ? h("div", { class: "muted" }, c.mods.map(m => m.name).join(", ")) : null, c.comment ? h("div", { class: "muted" }, "«" + c.comment + "»") : null),
+        h("td", { class: "num" }, money((c.price + c.mods.reduce((s, m) => s + m.price, 0)) * c.quantity)),
+        h("td", {}, h("button", { class: "small", onclick: () => { c.quantity++; drawCart(); } }, "+"),
+          h("button", { class: "small", onclick: () => { c.quantity > 1 ? c.quantity-- : S.cart.splice(idx, 1); drawCart(); } }, "−")))))
+        : h("div", { class: "muted" }, "Нажмите на блюда, чтобы добавить"),
+      S.cart.length ? btn(`Отправить на кухню (${S.cart.reduce((s, c) => s + c.quantity, 0)})`, async () => {
+        await api("POST", `/orders/${order.id}/items`, { items: S.cart.map(c => ({ menu_item_id: c.id, quantity: c.quantity, modifier_ids: c.mods.map(m => m.id), comment: c.comment || null })) });
+        S.cart = []; toast("Отправлено на кухню"); renderTab();
+      }, "primary") : "");
+  };
+  const add = (it, mods, comment) => { S.cart.push({ id: it.id, name: it.name, price: it.price, quantity: 1, mods, comment }); drawCart(); };
+  const choose = it => {
+    const gs = groups.filter(g => it.modifier_group_ids.includes(g.id));
+    const body = h("div", { class: "stack" }, gs.map(g => h("div", {},
+      h("div", { class: "muted" }, `${g.name} (выбрать ${g.min_select}–${g.max_select})`),
+      g.modifiers.map(m => h("label", { style: "flex-direction:row;gap:6px;align-items:center;color:var(--ink)" },
+        h("input", { type: g.max_select === 1 ? "radio" : "checkbox", name: "g_" + g.id, value: m.id, disabled: !m.is_available }),
+        `${m.name}${m.price ? " +" + money(m.price) : ""}`)))),
+      h("label", {}, "Комментарий", h("input", { id: "cm" })));
+    modal(it.name, body, btn("Добавить", () => {
+      const ids = [...document.querySelectorAll("#dlg input:checked")].map(x => x.value);
+      const mods = gs.flatMap(g => g.modifiers).filter(m => ids.includes(m.id));
+      add(it, mods, val("cm")); $("#dlg").close();
+    }, "primary"));
+  };
+  const catBtns = h("div", { class: "row" }, cats.map(c => h("button", { class: S.pickCat === c.id ? "primary small" : "small", onclick: () => { S.pickCat = c.id; renderTab(); } }, c.name)));
+  const grid = h("div", { class: "menu-items" }, items.filter(i => i.category_id === S.pickCat).map(i =>
+    h("button", { class: "mi" + (i.available_now ? "" : " off"), disabled: !i.available_now,
+      onclick: () => (i.modifier_group_ids.length ? choose(i) : add(i, [], "")) },
+      h("span", {}, i.name), h("span", { class: "price" }, money(i.price)), i.modifier_group_ids.length ? h("span", { class: "muted" }, "есть добавки") : null)));
+  drawCart();
+  return h("div", { class: "stack" }, h("h3", {}, "Добавить блюда"), catBtns, grid, h("h3", {}, "Корзина"), cart);
+}
+
+// ---------- Кухня ----------
+views.kitchen = {
+  title: "Кухня", live: true, show: () => can("kitchen.work"),
+  async render() {
+    const stations = (await api("GET", "/stations")).filter(s => !S.me.station_ids.length || S.me.station_ids.includes(s.id));
+    const qs = S.stations.map(id => "station_ids=" + id).join("&");
+    const items = await api("GET", "/kitchen/items" + (qs ? "?" + qs : ""));
+    const picker = h("div", { class: "card row center" }, h("b", {}, "Станции экрана:"),
+      stations.map(s => h("label", { style: "flex-direction:row;gap:6px;align-items:center;color:var(--ink)" },
+        h("input", { type: "checkbox", checked: S.stations.includes(s.id), onchange: e => {
+          S.stations = e.target.checked ? [...S.stations, s.id] : S.stations.filter(x => x !== s.id);
+          store.set("kdsStations", S.stations); ws.start(); renderTab();
+        } }), h("span", { class: "chip", style: `background:${s.color}33` }, s.name), s.is_active ? null : h("span", { class: "chip bad" }, "выкл"))),
+      h("span", { class: "muted" }, S.stations.length ? "" : "не выбрано — показываются все"));
+    const byOrder = new Map();
+    for (const it of items) { if (!byOrder.has(it.order_id)) byOrder.set(it.order_id, []); byOrder.get(it.order_id).push(it); }
+    const stName = Object.fromEntries(stations.map(s => [s.id, s]));
+    const tickets = [...byOrder.values()].map(list => {
+      const f = list[0];
+      return h("div", { class: "card ticket" },
+        h("div", { class: "row center" }, h("h2", { style: "margin:0" }, "№" + f.order_number), h("span", {}, f.table_name ? "стол " + f.table_name : "с собой"),
+          h("span", { class: "grow" }), h("span", { class: "timer", "data-since": f.created_at }, "")),
+        f.order_comment ? h("div", { class: "muted" }, "«" + f.order_comment + "»") : null,
+        list.map(i => h("div", { class: "it " + i.status },
+          h("div", {}, h("div", { class: "nm" }, h("b", {}, `${i.quantity}× ${i.name}`)),
+            i.modifiers.length ? h("div", { class: "muted" }, i.modifiers.map(m => m.name).join(", ")) : null,
+            i.comment ? h("div", { class: "muted" }, "«" + i.comment + "»") : null,
+            h("div", { class: "muted" }, (stName[i.station_id]?.name || "") + " · ", h("span", { class: "timer", "data-since": i.created_at }, ""))),
+          h("div", { class: "row", style: "flex-direction:column;align-items:stretch;gap:4px" },
+            i.status === "queued" ? btn("Готовлю", () => itemStatus(i.id, "cooking"), "small") : null,
+            i.status !== "ready" ? btn("Готово", () => itemStatus(i.id, "ready"), "small primary") : null,
+            i.status === "ready" ? btn("Отдано", () => itemStatus(i.id, "served"), "small") : null,
+            i.status === "cooking" ? btn("↶", () => itemStatus(i.id, "queued"), "small") : null))));
+    });
+    tickTimers();
+    return h("div", { class: "stack" }, picker,
+      tickets.length ? h("div", { class: "kds" }, tickets) : h("div", { class: "card muted" }, "Нет блюд в работе. Новые заказы появятся сами (со звуком)."),
+      can("menu.stop") ? await stopListCard() : null);
+  },
+};
+setInterval(tickTimers, 1000);
+function tickTimers() {
+  for (const el of document.querySelectorAll(".timer[data-since]")) {
+    const sec = Math.max(0, Math.floor((Date.now() - new Date(el.dataset.since)) / 1000));
+    el.textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+    el.classList.toggle("late", sec > 15 * 60);
+  }
+}
+async function stopListCard() {
+  const items = await api("GET", "/items");
+  return h("details", { class: "card" }, h("summary", {}, "Стоп-лист"),
+    h("div", { class: "menu-items", style: "margin-top:10px" }, items.map(i => h("label", { style: "flex-direction:row;gap:6px;align-items:center;color:var(--ink)" },
+      h("input", { type: "checkbox", checked: !i.is_available, onchange: async e => {
+        try { await api("POST", `/items/${i.id}/stop`, { is_available: !e.target.checked }); toast(`${i.name}: ${e.target.checked ? "в стоп-листе" : "снова в наличии"}`); }
+        catch (err) { toast(err.message, true); e.target.checked = !e.target.checked; }
+      } }), i.name))));
+}
+
+// ---------- Касса ----------
+views.cashier = {
+  title: "Касса", live: true, show: () => can("billing.pay") || can("shifts.open"),
+  async render() {
+    const shift = await api("GET", "/shifts/current");
+    const shiftCard = h("div", { class: "card stack" }, h("h2", {}, "Смена"));
+    if (!shift) {
+      shiftCard.append(h("div", { class: "muted" }, "Смена закрыта. Без открытой смены оплату принять нельзя."),
+        can("shifts.open") ? h("div", { class: "row" }, h("label", {}, "Наличные в кассе на начало, сом", h("input", { id: "open_cash", type: "number", value: 0, style: "width:140px" })),
+          btn("Открыть смену", async () => { await api("POST", "/shifts/open", { opening_cash: toTyiyn(val("open_cash")) }); toast("Смена открыта"); renderTab(); }, "primary")) : null);
+    } else {
+      shiftCard.append(h("div", {}, `Смена №${shift.number} · ${shift.business_date} · открыта ${tm(shift.opened_at)} · в кассе на начало ${money(shift.opening_cash)}`),
+        h("div", { class: "row" },
+          can("shifts.close") ? btn("X-отчёт", async () => showReport("X-отчёт", await api("GET", "/shifts/current/x-report"))) : null,
+          can("shifts.cash") ? btn("Расход / внесение", () => cashDlg()) : null,
+          can("shifts.close") ? btn("Закрыть смену (Z)", () => closeDlg()) : null));
+    }
+    const page = await api("GET", "/orders?status=active&limit=100");
+    const list = h("div", { class: "card stack" }, h("h2", {}, "Заказы к оплате"),
+      page.items.length ? h("table", { class: "list" }, h("tr", {}, h("th", {}, "№"), h("th", {}, "Статус"), h("th", { class: "num" }, "Итого"), h("th", { class: "num" }, "Оплачено"), h("th", {}, "")),
+        page.items.map(o => h("tr", { style: S.payOrder === o.id ? "background:var(--chip)" : "" }, h("td", {}, o.number), h("td", {}, chip(o.status)),
+          h("td", { class: "num" }, money(o.total)), h("td", { class: "num" }, money(o.paid_total)),
+          h("td", {}, h("button", { class: "small", onclick: () => { S.payOrder = o.id; renderTab(); } }, "Выбрать")))))
+        : h("div", { class: "muted" }, "Нет активных заказов"));
+    const right = h("div", { class: "stack" });
+    if (S.payOrder) right.append(await payPanel(S.payOrder));
+    if (can("printing.manage")) right.append(await printQueue());
+    return h("div", { class: "split" }, h("div", { class: "stack" }, shiftCard, list), right);
+  },
+};
+
+async function payPanel(id) {
+  let o;
+  try { o = await api("GET", "/orders/" + id); } catch { S.payOrder = null; return h("div"); }
+  const card = h("div", { class: "card stack" }, h("div", { class: "row center" }, h("h2", { style: "margin:0" }, "Оплата заказа №" + o.number), chip(o.status)),
+    h("table", { class: "list" }, o.items.filter(i => i.status !== "cancelled").map(i => h("tr", {}, h("td", {}, `${i.name} × ${i.quantity}`), h("td", { class: "num" }, money(i.total)))),
+      o.discount_total ? h("tr", {}, h("td", {}, "Скидка"), h("td", { class: "num" }, "−" + money(o.discount_total))) : null,
+      o.service_charge ? h("tr", {}, h("td", {}, "Обслуживание"), h("td", { class: "num" }, money(o.service_charge))) : null,
+      h("tr", {}, h("td", {}, h("b", {}, "Итого")), h("td", { class: "num" }, h("b", {}, money(o.total)))),
+      h("tr", {}, h("td", {}, "Оплачено"), h("td", { class: "num" }, money(o.paid_total))),
+      h("tr", {}, h("td", {}, h("b", {}, "Остаток")), h("td", { class: "num" }, h("b", {}, money(o.remaining))))),
+    o.payments.length ? h("table", { class: "list" }, o.payments.map(p => h("tr", {}, h("td", {}, p.method), h("td", { class: "num" }, money(p.amount)),
+      h("td", { class: "muted" }, p.change ? "сдача " + money(p.change) : ""), h("td", {}, p.refunded_at ? h("span", { class: "chip bad" }, "возврат")
+        : can("billing.refund") ? btn("Возврат", async () => { const reason = prompt("Причина возврата"); if (!reason) return; await api("POST", `/payments/${p.id}/refund`, { reason }); renderTab(); }, "small danger") : null)))) : null);
+  if (["open", "billed"].includes(o.status)) {
+    card.append(
+      h("div", { class: "row" },
+        h("label", {}, "Способ", h("select", { id: "pm" }, ["cash", "card", "qr", "other"].map(m => h("option", { value: m }, { cash: "Наличные", card: "Карта", qr: "QR", other: "Другое" }[m])))),
+        h("label", {}, "Сумма, сом", h("input", { id: "pa", type: "number", step: "0.01", value: o.remaining / 100, style: "width:120px" })),
+        h("label", {}, "Дал гость (нал.)", h("input", { id: "pt", type: "number", step: "0.01", style: "width:120px" })),
+        btn("Принять оплату", async () => {
+          const body = { method: val("pm"), amount: toTyiyn(val("pa")) };
+          if (val("pt")) body.tendered = toTyiyn(val("pt"));
+          const r = await api("POST", `/orders/${o.id}/payments`, body);
+          const last = r.payments[r.payments.length - 1];
+          if (r.status === "paid") S.payOrder = null;
+          await renderTab();   // сначала новая форма (остаток), потом сообщение
+          toast(r.status === "paid" ? "Заказ оплачен" + (last.change ? ", сдача " + money(last.change) : "") : "Принято, остаток " + money(r.remaining));
+        }, "primary")),
+      h("div", { class: "muted" }, "Разделённая оплата: введите часть суммы, затем оплатите остаток другим способом."),
+      can("billing.discount") ? h("div", { class: "row" },
+        h("label", {}, "Скидка", h("select", { id: "dk" }, h("option", { value: "percent" }, "%"), h("option", { value: "amount" }, "сом"))),
+        h("label", {}, "Размер", h("input", { id: "dv", type: "number", style: "width:90px" })),
+        h("label", { class: "grow" }, "Причина", h("input", { id: "dr" })),
+        btn("Применить", async () => {
+          const kind = val("dk"); const v = parseFloat(val("dv")) || 0;
+          await api("POST", `/orders/${o.id}/discount`, { kind, value: kind === "percent" ? Math.round(v * 100) : toTyiyn(v), reason: val("dr") || null });
+          renderTab();
+        })) : null,
+      h("div", { class: "row" }, btn("Пречек", async () => { await api("POST", `/orders/${o.id}/bill`, { print: true }); toast("Пречек в очереди печати"); renderTab(); })));
+  }
+  return card;
+}
+
+function cashDlg() {
+  modal("Движение денег", h("div", { class: "stack" },
+    h("label", {}, "Вид", h("select", { id: "ck" }, h("option", { value: "expense" }, "Расход"), h("option", { value: "deposit" }, "Внесение"), h("option", { value: "collection" }, "Инкассация"))),
+    h("label", {}, "Сумма, сом", h("input", { id: "ca", type: "number", step: "0.01" })),
+    h("label", {}, "Комментарий", h("input", { id: "cc" }))),
+    btn("Сохранить", async () => { await api("POST", "/shifts/expenses", { kind: val("ck"), amount: toTyiyn(val("ca")), comment: val("cc") || null }); $("#dlg").close(); toast("Сохранено"); }, "primary"));
+}
+function closeDlg() {
+  modal("Закрытие смены", h("div", { class: "stack" },
+    h("label", {}, "Посчитано наличных в кассе, сом", h("input", { id: "cnt", type: "number", step: "0.01" })),
+    h("label", { style: "flex-direction:row;gap:6px;color:var(--ink)" }, h("input", { id: "force", type: "checkbox" }), "Закрыть, даже если есть открытые заказы")),
+    btn("Закрыть смену", async () => {
+      const s = await api("POST", "/shifts/close", { counted_cash: toTyiyn(val("cnt")), force: $("#force").checked });
+      $("#dlg").close(); showReport("Z-отчёт", s.z_report); renderTab();
+    }, "primary"));
+}
+function showReport(title, r) {
+  const rows = [["Выручка", money(r.revenue)], ...Object.entries(r.by_method).map(([k, v]) => ["  " + k, money(v)]),
+    ["Заказов оплачено", r.orders_paid], ["Отменено заказов", r.orders_cancelled], ["Открытых заказов", r.orders_open], ["Средний чек", money(r.average_check)],
+    ["Скидки", money(r.discounts_total)], ["Отменено позиций на", money(r.cancelled_items_total)],
+    ...Object.entries(r.cash_movements).map(([k, v]) => [{ expense: "Расходы", deposit: "Внесения", collection: "Инкассации" }[k] || k, money(v)]),
+    ["Наличные на начало", money(r.opening_cash)], ["Ожидается наличных", money(r.expected_cash)],
+    r.counted_cash != null ? ["Посчитано", money(r.counted_cash)] : null, r.cash_difference != null ? ["Расхождение", money(r.cash_difference)] : null].filter(Boolean);
+  modal(`${title} — смена №${r.number}`, h("table", { class: "list" }, rows.map(([a, b]) => h("tr", {}, h("td", {}, a), h("td", { class: "num" }, b)))));
+}
+
+async function printQueue() {
+  const jobs = await api("GET", "/print-jobs?status=pending");
+  return h("div", { class: "card stack" }, h("h2", {}, "Очередь печати ", h("span", { class: "chip" }, jobs.length)),
+    h("div", { class: "muted" }, "Здесь «Касса» печатает ESC/POS на принтеры. В прототипе — показываем текст и подтверждаем."),
+    jobs.length ? jobs.map(j => h("div", { class: "stack", style: "border-top:1px solid var(--line);padding-top:8px" },
+      h("div", { class: "row center" }, h("b", {}, { kitchen_ticket: "Кухонный бегунок", precheck: "Пречек", receipt: "Чек", x_report: "X-отчёт", z_report: "Z-отчёт" }[j.kind] || j.kind),
+        h("span", { class: "muted" }, tm(j.created_at)), h("span", { class: "grow" }),
+        btn("Напечатано", async () => { await api("POST", `/print-jobs/${j.id}/ack`, { ok: true }); renderTab(); }, "small primary"),
+        btn("Ошибка", async () => { await api("POST", `/print-jobs/${j.id}/ack`, { ok: false, error: "нет бумаги" }); renderTab(); }, "small")),
+      h("pre", { class: "receipt" }, receiptText(j)))) : h("div", { class: "muted" }, "Пусто"));
+}
+function receiptText(j) {
+  const p = j.payload; const L = [];
+  if (j.kind === "kitchen_ticket") {
+    L.push(`== ${p.station} ==`, `Заказ №${p.order_number}  ${p.table ? "Стол " + p.table : "С собой"}`, `Официант: ${p.waiter || "-"}`, "");
+    for (const i of p.items) { L.push(`${i.qty} x ${i.name}`); if (i.modifiers?.length) L.push("   + " + i.modifiers.join(", ")); if (i.comment) L.push("   ! " + i.comment); }
+  } else if (j.kind === "precheck" || j.kind === "receipt") {
+    if (p.header) L.push(p.header); L.push(p.venue || "", p.legal_name ? `${p.legal_name} ИНН ${p.tax_id || ""}` : "", "");
+    L.push(`${j.kind === "receipt" ? "ЧЕК" : "ПРЕЧЕК"} №${p.order_number}  ${p.table ? "Стол " + p.table : ""}`, "-".repeat(32));
+    for (const i of p.items) L.push(`${i.qty} x ${i.name}`.padEnd(22) + money(i.total).padStart(10));
+    L.push("-".repeat(32));
+    if (p.discount) L.push("Скидка".padEnd(22) + ("-" + money(p.discount)).padStart(10));
+    if (p.service_charge) L.push("Обслуживание".padEnd(22) + money(p.service_charge).padStart(10));
+    L.push("ИТОГО".padEnd(22) + money(p.total).padStart(10));
+    for (const pay of p.payments || []) L.push(`  ${pay.method}`.padEnd(22) + money(pay.amount).padStart(10));
+    if (p.footer) L.push("", p.footer);
+  } else {
+    L.push(`${j.kind === "z_report" ? "Z" : "X"}-ОТЧЁТ  смена №${p.number}`, `Выручка: ${money(p.revenue)}`);
+    for (const [k, v] of Object.entries(p.by_method || {})) L.push(`  ${k}: ${money(v)}`);
+    L.push(`Ожидается наличных: ${money(p.expected_cash)}`);
+  }
+  return L.filter(x => x !== "").join("\n");
+}
+
+// ---------- Меню ----------
+views.menu = {
+  title: "Меню", show: () => can("menu.view"),
+  async render() {
+    dropCache("cats", "items", "groups");
+    const [cats, items, stations, groups] = await Promise.all([api("GET", "/categories"), api("GET", "/items?include_inactive=true"), api("GET", "/stations"), api("GET", "/modifiers")]);
+    const stName = Object.fromEntries(stations.map(s => [s.id, s.name]));
+    const edit = can("menu.edit");
+    const stOpts = sel => [h("option", { value: "" }, "— станция категории —"), stations.map(s => h("option", { value: s.id, selected: s.id === sel }, s.name))];
+    const forms = edit ? h("div", { class: "grid" },
+      h("div", { class: "card stack" }, h("h3", {}, "Новая категория"),
+        h("label", {}, "Название (ru)", h("input", { id: "c_name" })), h("label", {}, "Название (ky)", h("input", { id: "c_ky" })),
+        h("label", {}, "Станция по умолчанию", h("select", { id: "c_st" }, stations.map(s => h("option", { value: s.id }, s.name)))),
+        btn("Создать", async () => { await api("POST", "/categories", { name: val("c_name"), translations: val("c_ky") ? { ky: val("c_ky") } : {}, default_station_id: val("c_st") || null }); renderTab(); }, "primary")),
+      h("div", { class: "card stack" }, h("h3", {}, "Новое блюдо"),
+        h("label", {}, "Категория", h("select", { id: "i_cat" }, cats.map(c => h("option", { value: c.id }, c.name)))),
+        h("div", { class: "row" }, h("label", { class: "grow" }, "Название (ru)", h("input", { id: "i_name" })), h("label", { class: "grow" }, "Название (ky)", h("input", { id: "i_ky" }))),
+        h("div", { class: "row" }, h("label", {}, "Цена, сом", h("input", { id: "i_price", type: "number", step: "0.01", style: "width:110px" })),
+          h("label", {}, "Вес, г", h("input", { id: "i_w", type: "number", style: "width:90px" })),
+          h("label", { class: "grow" }, "Станция", h("select", { id: "i_st" }, stOpts()))),
+        h("label", {}, "Добавки", h("select", { id: "i_groups", multiple: true, size: Math.min(4, Math.max(groups.length, 1)) }, groups.map(g => h("option", { value: g.id }, g.name)))),
+        btn("Создать", async () => {
+          await api("POST", "/items", { category_id: val("i_cat"), name: val("i_name"), price: toTyiyn(val("i_price")), weight_grams: +val("i_w") || null,
+            station_id: val("i_st") || null, translations: val("i_ky") ? { ky: { name: val("i_ky") } } : {},
+            modifier_group_ids: [...$("#i_groups").selectedOptions].map(o => o.value) });
+          toast("Блюдо создано"); renderTab();
+        }, "primary")),
+      h("div", { class: "card stack" }, h("h3", {}, "Группа добавок"),
+        h("label", {}, "Название", h("input", { id: "g_name", placeholder: "Острота" })),
+        h("div", { class: "row" }, h("label", {}, "мин", h("input", { id: "g_min", type: "number", value: 0, style: "width:70px" })), h("label", {}, "макс", h("input", { id: "g_max", type: "number", value: 1, style: "width:70px" }))),
+        h("label", {}, "Варианты: «название=цена» через запятую", h("input", { id: "g_mods", placeholder: "Острый=0, Двойной соус=50" })),
+        btn("Создать", async () => {
+          const modifiers = val("g_mods").split(",").map(s => s.trim()).filter(Boolean).map(s => { const [n, p] = s.split("="); return { name: n.trim(), price: toTyiyn(p || 0) }; });
+          await api("POST", "/modifiers", { name: val("g_name"), min_select: +val("g_min"), max_select: +val("g_max"), modifiers }); renderTab();
+        }, "primary"))) : null;
+    const list = h("div", { class: "card stack" }, h("h2", {}, "Блюда"), cats.map(c => h("div", { class: "stack" },
+      h("h3", {}, c.name, " ", h("span", { class: "muted" }, "→ " + (stName[c.default_station_id] || "без станции"))),
+      h("table", { class: "list" }, h("tr", {}, h("th", {}, "Блюдо"), h("th", {}, "Станция"), h("th", { class: "num" }, "Цена"), h("th", {}, "В наличии"), h("th", {}, "")),
+        items.filter(i => i.category_id === c.id).map(i => h("tr", {},
+          h("td", {}, i.photo_thumb_url ? h("img", { src: (i.photo_thumb_url.startsWith("http") ? "" : S.base) + i.photo_thumb_url, style: "width:40px;height:40px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px" }) : null,
+            i.name, i.translations.ky ? h("div", { class: "muted" }, "ky: " + i.translations.ky.name) : null, i.is_active ? null : h("span", { class: "chip" }, "скрыто")),
+          h("td", {}, stName[i.station_id] || short(i.station_id)),
+          h("td", { class: "num" }, money(i.price)),
+          h("td", {}, can("menu.stop") ? h("input", { type: "checkbox", checked: i.is_available, onchange: async e => {
+            try { await api("POST", `/items/${i.id}/stop`, { is_available: e.target.checked }); } catch (err) { toast(err.message, true); }
+          } }) : (i.is_available ? "да" : "нет"), i.available_now ? null : h("span", { class: "chip bad" }, "недоступно")),
+          h("td", {}, edit ? h("span", { class: "row", style: "gap:4px" },
+            btn("Цена", async () => { const p = prompt("Новая цена, сом", i.price / 100); if (p === null) return; await api("PATCH", `/items/${i.id}`, { price: toTyiyn(p) }); renderTab(); }, "small"),
+            btn("Фото", () => photoUpload(i), "small"),
+            btn("✕", async () => { if (!confirm(`Убрать «${i.name}» в архив?`)) return; await api("DELETE", `/items/${i.id}`); renderTab(); }, "small danger")) : null)))))));
+    const gl = groups.length ? h("div", { class: "card" }, h("h3", {}, "Группы добавок"), groups.map(g => h("div", {}, h("b", {}, g.name), ` (${g.min_select}–${g.max_select}): `, g.modifiers.map(m => `${m.name}${m.price ? " +" + money(m.price) : ""}`).join(", ")))) : null;
+    return h("div", { class: "stack" }, forms, list, gl);
+  },
+};
+function photoUpload(item) {
+  const inp = h("input", { type: "file", accept: "image/jpeg,image/png,image/webp" });
+  inp.onchange = async () => {
+    const fd = new FormData(); fd.append("file", inp.files[0]);
+    try { await api("POST", `/items/${item.id}/photo`, undefined, { form: fd }); toast("Фото загружено"); renderTab(); } catch (e) { toast(e.message, true); }
+  };
+  inp.click();
+}
+
+// ---------- Станции ----------
+views.stations = {
+  title: "Станции", show: () => can("stations.manage"),
+  async render() {
+    const [stations, items, cats, printers] = await Promise.all([api("GET", "/stations?include_archived=true"), api("GET", "/items"), api("GET", "/categories"),
+      can("printing.manage") ? api("GET", "/printers") : Promise.resolve([])]);
+    const live = stations.filter(s => !s.archived_at);
+    const other = id => live.filter(s => s.id !== id).map(s => h("option", { value: s.id }, s.name));
+    return h("div", { class: "stack" },
+      h("div", { class: "card row" }, h("label", {}, "Название", h("input", { id: "s_name", placeholder: "Супы" })),
+        h("label", {}, "Цвет", h("input", { id: "s_color", type: "color", value: "#ff7a00", style: "width:60px;padding:2px" })),
+        h("label", {}, "Принтер", h("select", { id: "s_pr" }, h("option", { value: "" }, "—"), printers.map(p => h("option", { value: p.id }, p.name)))),
+        btn("Создать станцию", async () => { await api("POST", "/stations", { name: val("s_name"), color: val("s_color"), printer_id: val("s_pr") || null }); renderTab(); }, "primary")),
+      h("div", { class: "grid" }, stations.map(s => h("div", { class: "card stack", style: `border-left:6px solid ${s.color}` },
+        h("div", { class: "row center" }, h("h2", { style: "margin:0" }, s.name), s.archived_at ? h("span", { class: "chip" }, "архив") : s.is_active ? h("span", { class: "chip ok" }, "активна") : h("span", { class: "chip bad" }, "выключена")),
+        h("div", { class: "muted" }, `Блюд: ${s.items_count}` + (s.printer_id ? " · принтер " + (printers.find(p => p.id === s.printer_id)?.name || "") : "")),
+        h("div", { class: "muted" }, items.filter(i => i.station_id === s.id).map(i => i.name).join(", ") || "—"),
+        s.archived_at ? null : h("div", { class: "row" },
+          btn(s.is_active ? "Выключить" : "Включить", async () => { await api("PATCH", `/stations/${s.id}`, { is_active: !s.is_active }); renderTab(); }, "small"),
+          btn("Переименовать", async () => { const n = prompt("Новое название", s.name); if (!n) return; await api("PATCH", `/stations/${s.id}`, { name: n }); renderTab(); }, "small"),
+          btn("Разделить", () => modal(`Разделить «${s.name}»`, h("div", { class: "stack" },
+            h("label", {}, "Новая станция", h("input", { id: "sp_name" })),
+            h("div", { class: "muted" }, "Отметьте блюда или целые категории, которые переезжают:"),
+            items.filter(i => i.station_id === s.id).map(i => h("label", { style: "flex-direction:row;gap:6px;color:var(--ink)" }, h("input", { type: "checkbox", class: "sp_i", value: i.id }), i.name)),
+            h("hr"), cats.map(c => h("label", { style: "flex-direction:row;gap:6px;color:var(--ink)" }, h("input", { type: "checkbox", class: "sp_c", value: c.id }), "категория: " + c.name))),
+            btn("Разделить", async () => {
+              const r = await api("POST", `/stations/${s.id}/split`, { new_station: { name: val("sp_name") },
+                item_ids: [...document.querySelectorAll(".sp_i:checked")].map(x => x.value), category_ids: [...document.querySelectorAll(".sp_c:checked")].map(x => x.value) });
+              $("#dlg").close(); toast(`Перенесено блюд: ${r.moved_items}, открытых позиций: ${r.moved_open_order_items}`); renderTab();
+            }, "primary")), "small"),
+          btn("Объединить", () => modal(`Объединить «${s.name}» с…`, h("label", {}, "Все блюда переедут на станцию", h("select", { id: "mg" }, other(s.id))),
+            btn("Объединить", async () => { const r = await api("POST", `/stations/${s.id}/merge`, { target_id: val("mg") }); $("#dlg").close(); toast(`Перенесено блюд: ${r.moved_items}`); renderTab(); }, "primary")), "small"),
+          btn("Удалить", () => modal(`Удалить «${s.name}»`, h("label", {}, "Куда передать блюда и незакрытые позиции", h("select", { id: "mv" }, h("option", { value: "" }, "— никуда (только если станция пуста) —"), other(s.id))),
+            btn("Удалить", async () => { const q = val("mv") ? "?move_to=" + val("mv") : ""; await api("DELETE", `/stations/${s.id}${q}`); $("#dlg").close(); toast("Станция в архиве"); renderTab(); }, "primary danger")), "small danger"))))));
+  },
+};
+
+// ---------- Настройка заведения: залы, столы, принтеры, настройки ----------
+views.venue = {
+  title: "Настройка", show: () => can("venue.manage") || can("printing.manage"),
+  async render() {
+    const [halls, tables, venue, settings] = await Promise.all([api("GET", "/halls"), api("GET", "/tables"), api("GET", "/venue"), api("GET", "/settings")]);
+    const printers = can("printing.manage") ? await api("GET", "/printers") : [];
+    const menuUrl = `${API()}/public/${venue.slug}/menu`;
+    const out = h("div", { class: "stack" });
+    if (can("venue.manage")) {
+      out.append(h("div", { class: "grid" },
+        h("div", { class: "card stack" }, h("h3", {}, "Зал"), h("label", {}, "Название", h("input", { id: "h_name" })),
+          btn("Создать зал", async () => { await api("POST", "/halls", { name: val("h_name") }); renderTab(); }, "primary")),
+        h("div", { class: "card stack" }, h("h3", {}, "Столы"),
+          h("label", {}, "Зал", h("select", { id: "t_hall" }, halls.map(x => h("option", { value: x.id }, x.name)))),
+          h("div", { class: "row" }, h("label", {}, "Номера (через запятую или 1-10)", h("input", { id: "t_names", placeholder: "1-6" })), h("label", {}, "Мест", h("input", { id: "t_seats", type: "number", value: 4, style: "width:70px" }))),
+          btn("Создать столы", async () => {
+            let names = val("t_names"); const m = names.match(/^(\d+)\s*-\s*(\d+)$/);
+            names = m ? Array.from({ length: +m[2] - +m[1] + 1 }, (_, k) => String(+m[1] + k)) : names.split(",").map(s => s.trim()).filter(Boolean);
+            for (const n of names) await api("POST", "/tables", { hall_id: val("t_hall"), name: n, seats: +val("t_seats") || 4 });
+            toast("Создано столов: " + names.length); renderTab();
+          }, "primary")),
+        h("div", { class: "card stack" }, h("h3", {}, "Настройки"),
+          h("label", {}, "Шапка чека", h("input", { id: "st_h", value: settings.receipt_header || "" })),
+          h("label", {}, "Юр. лицо / ИНН", h("div", { class: "row" }, h("input", { id: "st_l", class: "grow", value: settings.legal_name || "" }), h("input", { id: "st_t", style: "width:140px", value: settings.tax_id || "" }))),
+          h("label", {}, "Обслуживание, %", h("input", { id: "st_s", type: "number", step: "0.1", value: settings.service_charge_bp / 100 })),
+          btn("Сохранить", async () => { await api("PATCH", "/settings", { receipt_header: val("st_h") || null, legal_name: val("st_l") || null, tax_id: val("st_t") || null, service_charge_bp: Math.round(parseFloat(val("st_s") || 0) * 100) }); toast("Сохранено"); }, "primary"))));
+      out.append(h("div", { class: "card stack" }, h("h2", {}, "Столы и QR"),
+        h("div", { class: "muted" }, "QR на столе ведёт на сайт-меню: ", h("span", { class: "mono" }, `menu.dostuk.kg/${venue.slug}?t=<токен>`), ". Публичное API: ", h("a", { href: menuUrl, target: "_blank" }, menuUrl)),
+        h("table", { class: "list" }, h("tr", {}, h("th", {}, "Стол"), h("th", {}, "Зал"), h("th", {}, "Мест"), h("th", {}, "QR-токен"), h("th", {}, "")),
+          tables.map(t => h("tr", {}, h("td", {}, t.name), h("td", {}, halls.find(x => x.id === t.hall_id)?.name || ""), h("td", {}, t.seats), h("td", { class: "mono" }, t.qr_token),
+            h("td", {}, btn("Новый QR", async () => { await api("POST", `/tables/${t.id}/regenerate-qr`); renderTab(); }, "small"),
+              btn("Позвать официанта (как гость)", async () => { await api("POST", `/public/${venue.slug}/call-waiter`, { t: t.qr_token }, { noAuth: true }); toast("Вызов отправлен"); }, "small")))))));
+    }
+    if (can("printing.manage")) {
+      out.append(h("div", { class: "card stack" }, h("h2", {}, "Принтеры"),
+        h("div", { class: "row" }, h("label", {}, "Название", h("input", { id: "p_name" })),
+          h("label", {}, "Тип", h("select", { id: "p_kind" }, h("option", { value: "receipt" }, "чековый"), h("option", { value: "kitchen" }, "кухонный"))),
+          h("label", { class: "grow" }, "Адрес", h("input", { id: "p_addr", placeholder: "192.168.1.50:9100" })),
+          btn("Добавить", async () => { await api("POST", "/printers", { name: val("p_name"), kind: val("p_kind"), address: val("p_addr") || null, is_default_receipt: val("p_kind") === "receipt" }); renderTab(); }, "primary")),
+        h("table", { class: "list" }, printers.map(p => h("tr", {}, h("td", {}, p.name), h("td", {}, p.kind), h("td", { class: "mono" }, p.address || ""))))));
+    }
+    return out;
+  },
+};
+
+// ---------- Персонал, роли, устройства ----------
+views.staff = {
+  title: "Персонал", show: () => can("staff.manage") || can("devices.manage"),
+  async render() {
+    const out = h("div", { class: "stack" });
+    if (can("devices.manage")) {
+      const devices = await api("GET", "/devices");
+      out.append(h("div", { class: "card stack" }, h("h2", {}, "Устройства"),
+        h("div", { class: "row" }, h("label", {}, "Название", h("input", { id: "d_name", placeholder: "Планшет кухни" })),
+          h("label", {}, "Тип", h("select", { id: "d_kind" }, h("option", { value: "waiter" }, "официант"), h("option", { value: "kitchen" }, "кухня"), h("option", { value: "pos" }, "касса"))),
+          btn("Создать код привязки", async () => {
+            const r = await api("POST", "/auth/device/pairing-codes", { name: val("d_name") || "Устройство", kind: val("d_kind") });
+            modal("Код привязки", h("div", { class: "stack", style: "text-align:center" }, h("div", { class: "mono", style: "font-size:34px;letter-spacing:6px" }, r.code),
+              h("div", { class: "muted" }, "Действует до " + tm(r.expires_at) + ". Откройте консоль в новом окне/вкладке, выйдите и введите код в блоке «Устройство».")));
+          }, "primary")),
+        h("table", { class: "list" }, h("tr", {}, h("th", {}, "Устройство"), h("th", {}, "Тип"), h("th", {}, "Привязано"), h("th", {}, "Активность"), h("th", {}, "")),
+          devices.map(d => h("tr", {}, h("td", {}, d.name), h("td", {}, d.kind), h("td", {}, d.paired_at ? new Date(d.paired_at).toLocaleString("ru-RU") : ""),
+            h("td", {}, d.last_seen_at ? new Date(d.last_seen_at).toLocaleString("ru-RU") : ""),
+            h("td", {}, d.revoked_at ? h("span", { class: "chip bad" }, "отозвано") : btn("Отозвать", async () => { if (!confirm("Отозвать устройство?")) return; await api("POST", `/devices/${d.id}/revoke`); renderTab(); }, "small danger")))))));
+    }
+    if (can("staff.manage")) {
+      const [staff, roles, perms, stations] = await Promise.all([api("GET", "/staff"), api("GET", "/roles"), api("GET", "/permissions"), api("GET", "/stations")]);
+      const roleName = Object.fromEntries(roles.map(r => [r.id, r.name]));
+      out.append(h("div", { class: "card stack" }, h("h2", {}, "Сотрудники"),
+        h("div", { class: "row" }, h("label", { class: "grow" }, "Имя", h("input", { id: "sf_name" })),
+          h("label", {}, "Роль", h("select", { id: "sf_role" }, roles.map(r => h("option", { value: r.id }, r.name)))),
+          h("label", {}, "PIN", h("input", { id: "sf_pin", inputmode: "numeric", style: "width:90px" })),
+          h("label", {}, "Станции (для повара)", h("select", { id: "sf_st", multiple: true, size: 2 }, stations.map(s => h("option", { value: s.id }, s.name)))),
+          btn("Добавить", async () => {
+            await api("POST", "/staff", { name: val("sf_name"), role_id: val("sf_role"), pin: val("sf_pin") || null, station_ids: [...$("#sf_st").selectedOptions].map(o => o.value) });
+            toast("Сотрудник добавлен"); renderTab();
+          }, "primary")),
+        h("table", { class: "list" }, h("tr", {}, h("th", {}, "Имя"), h("th", {}, "Роль"), h("th", {}, "PIN"), h("th", {}, "Станции"), h("th", {}, "")),
+          staff.map(s => h("tr", {}, h("td", {}, s.name, s.is_owner ? h("span", { class: "chip info" }, "владелец") : null, s.is_active ? null : h("span", { class: "chip bad" }, "уволен")),
+            h("td", {}, roleName[s.role_id] || ""), h("td", {}, s.has_pin ? "есть" : "—"),
+            h("td", {}, s.station_ids.map(id => stations.find(x => x.id === id)?.name || "").join(", ") || "все"),
+            h("td", {}, btn("PIN", async () => { const p = prompt("Новый PIN (4–8 цифр)"); if (!p) return; await api("PUT", `/staff/${s.id}/pin`, { pin: p }); toast("PIN изменён"); }, "small"),
+              s.is_owner ? null : btn(s.is_active ? "Отключить" : "Включить", async () => { await api("PATCH", `/staff/${s.id}`, { is_active: !s.is_active }); renderTab(); }, "small")))))));
+      out.append(h("div", { class: "card stack" }, h("h2", {}, "Роли и права"),
+        h("div", { class: "row" }, h("label", {}, "Новая роль", h("input", { id: "r_name", placeholder: "бармен" })), btn("Создать", async () => { await api("POST", "/roles", { name: val("r_name"), permissions: ["menu.view"] }); renderTab(); })),
+        h("div", { style: "overflow-x:auto" }, h("table", { class: "list" },
+          h("tr", {}, h("th", {}, "Право"), roles.map(r => h("th", {}, r.name))),
+          perms.map(p => h("tr", {}, h("td", {}, p.title, h("div", { class: "muted mono" }, p.code)),
+            roles.map(r => h("td", {}, h("input", { type: "checkbox", checked: r.permissions.includes(p.code), onchange: async e => {
+              const next = e.target.checked ? [...r.permissions, p.code] : r.permissions.filter(x => x !== p.code);
+              try { const upd = await api("PUT", `/roles/${r.id}/permissions`, { permissions: next }); r.permissions = upd.permissions; toast(`${r.name}: права сохранены`); }
+              catch (err) { toast(err.message, true); e.target.checked = !e.target.checked; }
+            } })))))))));
+    }
+    return out;
+  },
+};
+
+// ---------- Отчёты и журнал ----------
+views.reports = {
+  title: "Отчёты", show: () => can("reports.view") || can("audit.view"),
+  async render() {
+    const today = new Date().toISOString().slice(0, 10);
+    const out = h("div", { class: "stack" });
+    if (can("reports.view")) {
+      const box = h("div", { class: "stack" });
+      const q = () => `date_from=${val("r_from")}&date_to=${val("r_to")}`;
+      out.append(h("div", { class: "card stack" }, h("h2", {}, "Продажи"),
+        h("div", { class: "row" }, h("label", {}, "С", h("input", { id: "r_from", type: "date", value: S.rFrom || today })), h("label", {}, "По", h("input", { id: "r_to", type: "date", value: S.rTo || today })),
+          btn("Показать", async () => {
+            S.rFrom = val("r_from"); S.rTo = val("r_to");
+            const r = await api("GET", "/reports/sales?" + q());
+            const tbl = (title, rows, cols) => h("div", {}, h("h3", {}, title), h("table", { class: "list" }, h("tr", {}, cols.map(c => h("th", { class: c[2] ? "num" : "" }, c[0]))),
+              rows.map(x => h("tr", {}, cols.map(c => h("td", { class: c[2] ? "num" : "" }, c[2] ? money(x[c[1]]) : x[c[1]] ?? "—"))))));
+            box.replaceChildren(h("div", { class: "row" }, h("span", { class: "chip" }, "Заказов: " + r.orders), h("span", { class: "chip ok" }, "Выручка: " + money(r.revenue)), h("span", { class: "chip" }, "Средний чек: " + money(r.average_check)),
+              ...Object.entries(r.by_method).map(([k, v]) => h("span", { class: "chip" }, `${k}: ${money(v)}`))),
+              h("div", { class: "grid" }, tbl("По дням", r.by_day, [["Дата", "date"], ["Заказов", "orders"], ["Выручка", "revenue", 1]]),
+                tbl("По блюдам", r.by_item, [["Блюдо", "name"], ["Кол-во", "quantity"], ["Выручка", "revenue", 1]]),
+                tbl("По станциям", r.by_station, [["Станция", "name"], ["Кол-во", "quantity"], ["Выручка", "revenue", 1]]),
+                tbl("По официантам", r.by_waiter, [["Официант", "name"], ["Заказов", "orders"], ["Выручка", "revenue", 1]])));
+          }, "primary"),
+          btn("Скачать Excel", async () => {
+            const res = await api("GET", "/reports/sales.xlsx?" + q(), undefined, { raw: true });
+            const a = h("a", { href: URL.createObjectURL(await res.blob()), download: `sales_${val("r_from")}_${val("r_to")}.xlsx` }); a.click();
+          })), box));
+    }
+    if (can("audit.view")) {
+      const page = await api("GET", "/audit?limit=100" + (S.auditFilter ? "&action=" + encodeURIComponent(S.auditFilter) : ""));
+      out.append(h("div", { class: "card stack" }, h("h2", {}, "Журнал действий"),
+        h("div", { class: "row" }, h("label", {}, "Фильтр (например order.* или auth.*)", h("input", { id: "af", value: S.auditFilter || "" })),
+          btn("Применить", () => { S.auditFilter = val("af"); renderTab(); })),
+        h("table", { class: "list" }, h("tr", {}, h("th", {}, "Время"), h("th", {}, "Действие"), h("th", {}, "Объект"), h("th", {}, "Данные")),
+          page.items.map(a => h("tr", {}, h("td", {}, new Date(a.created_at).toLocaleString("ru-RU")), h("td", {}, h("span", { class: "chip" }, a.action)),
+            h("td", { class: "mono" }, (a.entity || "") + " " + short(a.entity_id)), h("td", { class: "mono" }, JSON.stringify(a.data)))))));
+    }
+    return out;
+  },
+};
+
+// ---------- Сайт-меню (как видит гость) ----------
+views.site = {
+  title: "Сайт-меню", show: () => true,
+  async render() {
+    const venue = await api("GET", "/venue");
+    S.siteLang ??= "ru";
+    const data = await api("GET", `/public/${venue.slug}/menu?lang=${S.siteLang}`, undefined, { noAuth: true });
+    return h("div", { class: "card stack", style: "max-width:520px;margin:0 auto" },
+      h("div", { class: "row center" }, h("h2", { style: "margin:0" }, data.venue.name), h("span", { class: "grow" }),
+        ["ru", "ky"].map(l => h("button", { class: "small" + (S.siteLang === l ? " primary" : ""), onclick: () => { S.siteLang = l; renderTab(); } }, l))),
+      h("div", { class: "muted" }, data.venue.address || "", " · кэш 60 с, сбрасывается при изменении меню"),
+      data.categories.map(c => h("div", { class: "stack" }, h("h3", {}, c.name),
+        c.items.map(i => h("div", { class: "row center", style: "opacity:" + (i.available ? 1 : .45) },
+          i.photo_thumb_url ? h("img", { src: (i.photo_thumb_url.startsWith("http") ? "" : S.base) + i.photo_thumb_url, style: "width:56px;height:56px;object-fit:cover;border-radius:8px" }) : null,
+          h("div", { class: "grow" }, h("div", {}, i.name), h("div", { class: "muted" }, [i.weight_grams ? i.weight_grams + " г" : "", i.description || ""].filter(Boolean).join(" · "))),
+          h("span", { class: "price" }, i.available ? money(i.price) : "нет в наличии"))))));
+  },
+};
+
+// ---------- События (WebSocket) ----------
+views.events = {
+  title: "События", live: true, show: () => true,
+  async render() {
+    return h("div", { class: "stack" },
+      h("div", { class: "card row center" }, h("span", {}, `Последний seq: ${S.since}`),
+        btn("Переподключить", () => { ws.start(); }), btn("Добрать с seq=0 (REST)", async () => {
+          const r = await api("GET", "/events?since=0&limit=200");
+          modal("GET /events?since=0", h("pre", { class: "mono", style: "max-height:60vh;overflow:auto" }, JSON.stringify(r, null, 2)));
+        }), btn("Очистить", () => { ws.log = []; renderTab(); })),
+      h("div", { class: "card log" }, ws.log.length ? ws.log.map(({ at, ev }) => h("div", { class: "ev" },
+        h("div", { class: "row center" }, h("span", { class: "chip info" }, ev.type), h("span", { class: "muted" }, at.toLocaleTimeString("ru-RU") + (ev.seq ? " · seq " + ev.seq : ""))),
+        h("pre", { class: "mono" }, JSON.stringify(ev.data ?? ev, null, 1)))) : h("div", { class: "muted" }, "Пока событий нет. Сделайте заказ в соседней вкладке.")));
+  },
+};
+
+// ---------- Демо-данные и API-консоль ----------
+views.tools = {
+  title: "Инструменты", show: () => true,
+  async render() {
+    const out = h("div", { class: "stack" });
+    if (can("menu.edit") && can("stations.manage") && can("venue.manage") && can("staff.manage")) {
+      out.append(h("div", { class: "card stack" }, h("h2", {}, "Демо-данные"),
+        h("div", { class: "muted" }, "Создаст станции (Горячее, Гриль, Бар), меню на кыргызском и русском, зал с 6 столами, принтеры и сотрудников: Официант PIN 1111, Повар 2222, Кассир 3333."),
+        btn("Заполнить демо-данными", seedDemo, "primary")));
+    }
+    out.append(h("div", { class: "card stack" }, h("h2", {}, "API-консоль"),
+      h("div", { class: "row" }, h("select", { id: "x_m" }, ["GET", "POST", "PATCH", "PUT", "DELETE"].map(m => h("option", {}, m))),
+        h("input", { id: "x_p", class: "grow", value: "/auth/me" }), btn("Отправить", async () => {
+          let body; const t = $("#x_b").value.trim(); if (t) body = JSON.parse(t);
+          try { const r = await api(val("x_m"), val("x_p"), body); $("#x_out").textContent = JSON.stringify(r, null, 2); }
+          catch (e) { $("#x_out").textContent = e.status + "\n" + JSON.stringify(e.body, null, 2); }
+        }, "primary")),
+      h("textarea", { id: "x_b", rows: 4, placeholder: '{"json": "тело запроса"}' }),
+      h("pre", { id: "x_out", class: "mono", style: "max-height:50vh;overflow:auto" }),
+      h("div", { class: "muted" }, "Пути — относительно /api/v1. Полная документация: ", h("a", { href: S.base + "/api/docs", target: "_blank" }, "/api/docs"))));
+    out.append(h("div", { class: "card muted" }, "Права текущего входа: ", h("span", { class: "mono" }, S.me.permissions.join(", "))));
+    return out;
+  },
+};
+
+async function seedDemo() {
+  const P = (path, body) => api("POST", path, body);
+  const kitchenPrinter = await P("/printers", { name: "Кухня", kind: "kitchen", address: "192.168.1.51:9100" });
+  await P("/printers", { name: "Касса", kind: "receipt", address: "USB", connection: "usb", is_default_receipt: true });
+  const hot = await P("/stations", { name: "Горячее", color: "#ff7a00", printer_id: kitchenPrinter.id });
+  const grill = await P("/stations", { name: "Гриль", color: "#c0392b" });
+  const bar = await P("/stations", { name: "Бар", color: "#2b6cb0" });
+  const cHot = await P("/categories", { name: "Горячие блюда", translations: { ky: "Ысык тамактар" }, default_station_id: hot.id });
+  const cGrill = await P("/categories", { name: "Шашлык", translations: { ky: "Шашлык" }, default_station_id: grill.id });
+  const cDrink = await P("/categories", { name: "Напитки", translations: { ky: "Суусундуктар" }, default_station_id: bar.id });
+  const spicy = await P("/modifiers", { name: "Острота", min_select: 0, max_select: 1, modifiers: [{ name: "Острый", price: 0 }, { name: "Очень острый", price: 0 }] });
+  const extra = await P("/modifiers", { name: "Добавки", min_select: 0, max_select: 3, modifiers: [{ name: "Яйцо", price: 3000 }, { name: "Двойное мясо", price: 12000 }, { name: "Лук", price: 0 }] });
+  const items = [
+    [cHot, "Плов", "Палоо", 35000, 350, [extra.id]], [cHot, "Лагман", "Лагман", 30000, 400, [spicy.id, extra.id]], [cHot, "Манты (5 шт.)", "Манты (5 даана)", 32000, 300, []],
+    [cHot, "Бешбармак", "Бешбармак", 45000, 450, []], [cGrill, "Шашлык из баранины", "Кой этинен шашлык", 28000, 200, [spicy.id]],
+    [cGrill, "Шашлык из курицы", "Тоок этинен шашлык", 22000, 200, [spicy.id]], [cDrink, "Чай чёрный (чайник)", "Кара чай (чайнек)", 8000, null, []],
+    [cDrink, "Компот", "Компот", 6000, 300, []], [cDrink, "Максым", "Максым", 7000, 500, []],
+  ];
+  for (const [c, name, ky, price, w, groups] of items)
+    await P("/items", { category_id: c.id, name, price, weight_grams: w, translations: { ky: { name: ky } }, modifier_group_ids: groups });
+  const hall = await P("/halls", { name: "Основной зал" });
+  const terrace = await P("/halls", { name: "Терраса" });
+  for (const n of ["1", "2", "3", "4", "5", "6"]) await P("/tables", { hall_id: hall.id, name: n, seats: 4 });
+  for (const n of ["Т1", "Т2"]) await P("/tables", { hall_id: terrace.id, name: n, seats: 6 });
+  const roles = Object.fromEntries((await api("GET", "/roles")).map(r => [r.name, r.id]));
+  await P("/staff", { name: "Официант Айбек", role_id: roles.waiter, pin: "1111" });
+  await P("/staff", { name: "Повар Нурлан", role_id: roles.cook, pin: "2222" });
+  await P("/staff", { name: "Кассир Айгуль", role_id: roles.cashier, pin: "3333" });
+  dropCache("cats", "items", "groups");
+  toast("Демо-данные созданы. Теперь создайте коды привязки во вкладке «Персонал».");
+}
+
+window.addEventListener("focus", () => { if (S.access && S.me && ws.state === "off") ws.start(); });
+render();
+</script>
+</body>
+</html>
