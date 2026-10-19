@@ -1,0 +1,41 @@
+# HTTPS (автоматические сертификаты) и маршрутизация: /api, /ws, сайт, фото.
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	handle /api/v1/ws* {
+		reverse_proxy api:8000
+	}
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle /health {
+		reverse_proxy api:8000
+	}
+	handle {
+		respond 404
+	}
+}
+
+# Фото блюд из MinIO с кэшем
+{$FILES_DOMAIN} {
+	@photos path /venues/*
+	handle @photos {
+		header Cache-Control "public, max-age=31536000, immutable"
+		rewrite * /dostuk{uri}
+		reverse_proxy minio:9000
+	}
+	handle {
+		respond 404
+	}
+}
+
+# Сайт-меню (Next.js). Пока контейнер menu-site не подключён — отдаём 503.
+{$MENU_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy menu-site:3000 {
+		fail_duration 10s
+	}
+	handle_errors {
+		respond "Меню скоро будет доступно" 503
+	}
+}
